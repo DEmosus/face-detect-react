@@ -48,26 +48,27 @@ const returnClarifaiRequestOptions = (imageUrl) => {
 const App = () => {
   const [input, setInput] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [box, setBox] = useState({});
+  const [boxes, setBoxes] = useState([]);
   const [route, setRoute] = useState("signin");
   const [isSignedIn, setIsSignedIn] = useState(false);
 
-  const calculateFaceLocation = (data) => {
-    const boundingBox =
-      data.outputs[0].data.regions[0].region_info.bounding_box;
-    const image = document.getElementById("inputimage");
-    const width = Number(image.width);
-    const height = Number(image.height);
-    return {
-      leftCol: boundingBox.left_col * width,
-      topRow: boundingBox.top_row * height,
-      rightCol: width - boundingBox.right_col * width,
-      bottomRow: height - boundingBox.bottom_row * height,
-    };
+  const calculateFaceLocations = (data) => {
+    return data.outputs[0].data.regions.map(face => {
+      const boundingBox = face.region_info.bounding_box;
+      const image = document.getElementById("inputimage");
+      const width = Number(image.width);
+      const height = Number(image.height);
+      return {
+        leftCol: boundingBox.left_col * width,
+        topRow: boundingBox.top_row * height,
+        rightCol: width - boundingBox.right_col * width,
+        bottomRow: height - boundingBox.bottom_row * height,
+      };
+    })
   };
 
-  const displayFaceBox = (box) => {
-    setBox(box);
+  const displayFaceBoxes = (boxes) => {
+    setBoxes(boxes);
   };
 
   const onInputChange = (event) => {
@@ -81,7 +82,7 @@ const App = () => {
       returnClarifaiRequestOptions(input)
     )
       .then((response) => response.json())
-      .then((response) => displayFaceBox(calculateFaceLocation(response)))
+      .then((response) => displayFaceBoxes(calculateFaceLocations(response)))
       .catch((err) => console.log(err));
   };
 
@@ -106,7 +107,7 @@ const App = () => {
             onInputChange={onInputChange}
             onButtonSubmit={onButtonSubmit}
           />
-          <FaceRecognition box={box} imageUrl={imageUrl} />
+          <FaceRecognition boxes={boxes} imageUrl={imageUrl} />
         </div>
       ) : route === "signin" ? (
         <Signin onRouteChange={onRouteChange} />
